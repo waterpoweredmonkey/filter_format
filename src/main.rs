@@ -19,32 +19,41 @@ fn main() {
     println!("regex: {}", args.regex);
     println!("format: {}", args.format);
 
-    let mut value_array: Vec<String> = Vec::new();
-    Regex::new(format!(r"{}", &args.regex).as_str())
+    let regex_matches = find_regex_matches(&args.input, &args.regex);
+    println!("Regex Matches: {:?}", regex_matches);
+
+    let formatted_output = apply_format(&args.format, &regex_matches);
+    println!("Formatted output: {}", formatted_output);
+}
+
+fn find_regex_matches(input: &str, regex: &str) -> Vec<String> {
+    Regex::new(regex)
         .unwrap()
-        .find_iter(&args.input)
-        .enumerate()
-        .for_each(|(i, mat)| {
-            value_array.push(mat.as_str().to_string());
-        });
-    println!("Regex Matches{:?}", value_array);
+        .find_iter(input)
+        .map(|mat| mat.as_str().to_string())
+        .collect()
+}
 
-    let mut next_value = 0;
-    let mut i = 0;
+fn apply_format(format: &str, matches: &[String]) -> String {
     let mut output = String::new();
-    let char_array = args.format.chars().collect::<Vec<char>>();
+    let format_chars: Vec<char> = format.chars().collect();
+    let mut i = 0;
+    let mut next_match_index = 0;
 
-    while i < char_array.len() {
-        if char_array[i] == '{' && char_array[i+1] == '}' {
-            output.push_str(value_array[next_value].as_str());
-            next_value += 1;
+    while i < format_chars.len() {
+        if i + 1 < format_chars.len() && format_chars[i] == '{' && format_chars[i + 1] == '}' {
+            if next_match_index < matches.len() {
+                output.push_str(&matches[next_match_index]);
+                next_match_index += 1;
+            }
             i += 2;
         } else {
-            output.push(char_array[i]);
+            output.push(format_chars[i]);
             i += 1;
         }
     }
-    println!("Formatted output: {}", output);
+
+    output
 }
 // --input="test:a, thing:b" --regex="\:([a-z,A-Z,0-9]*)" --format="first:{}, second:{}"
 // \:([a-z,A-Z,0-9]*)
